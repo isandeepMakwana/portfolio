@@ -8,6 +8,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 RESUME_PROJECT_BULLETS.md
+PROJECT_PAGES_SCRIPT.md
 
 node_modules
 dist
