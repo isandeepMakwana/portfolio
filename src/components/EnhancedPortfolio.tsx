@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
-import { ArrowUp, ArrowUpRight, Github, Linkedin, Terminal, Moon, Sun, ChevronDown, Mail, Phone, MapPin, Clock, FileText, Code2 } from 'lucide-react'
+import { useState, useEffect, type FormEvent } from 'react'
+import { ArrowRight, ArrowUp, ArrowUpRight, Award, Github, Linkedin, Terminal, Moon, Sun, ChevronDown, Mail, Phone, MapPin, Clock, FileText, Code2, Target, Users } from 'lucide-react'
 import { motion, AnimatePresence, MotionConfig, useMotionValueEvent, useScroll, useSpring, type MotionProps } from 'framer-motion'
 import { TypeAnimation } from 'react-type-animation'
 import { PROJECTS, projectHref } from '../data/projects'
+import ProjectCard from './projects/ProjectCard'
 import { ACCENTS } from './projects/accents'
-import ProjectCardPreview from './projects/ProjectCardPreview'
 
 type ColorTheme = 'green' | 'blue' | 'purple' | 'red' | 'orange' | 'pink' | 'cyan' | 'rainbow'
 type TerminalStyle = 'modern' | 'retro' | 'minimal' | 'glass' | 'neon' | 'matrix' | 'cyberpunk' | 'gradient' |
@@ -176,6 +176,37 @@ const BUTTON_COLORS: Partial<Record<TerminalStyle, Record<ButtonType, string>>> 
 
 const getButtonColor = (style: TerminalStyle, type: ButtonType) => (BUTTON_COLORS[style] ?? DEFAULT_BUTTON_COLORS)[type]
 
+const CONTACT_EMAIL = 'sandeepmakwana.work@gmail.com'
+
+const TONES = {
+  dark: {
+    body: 'text-zinc-300',
+    muted: 'text-zinc-400',
+    lineNo: 'text-zinc-600',
+    yellow: 'text-yellow-500',
+    green: 'text-green-500',
+    blue: 'text-blue-400',
+    rowHover: 'hover:bg-zinc-800/50',
+    smallChip: 'bg-zinc-800/50 text-zinc-400',
+    divider: 'border-zinc-800',
+    input: 'bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-600',
+    button: 'bg-zinc-800 hover:bg-zinc-700',
+  },
+  light: {
+    body: 'text-stone-700',
+    muted: 'text-stone-600',
+    lineNo: 'text-stone-400',
+    yellow: 'text-amber-600',
+    green: 'text-green-700',
+    blue: 'text-blue-600',
+    rowHover: 'hover:bg-stone-200/60',
+    smallChip: 'bg-stone-200/70 text-stone-600',
+    divider: 'border-stone-200',
+    input: 'bg-white border-stone-300 text-stone-900 placeholder:text-stone-400',
+    button: 'bg-white hover:bg-stone-100',
+  },
+} as const
+
 const COLOR_THEMES: Record<ColorTheme, { primary: string }> = {
   green: { primary: 'rgb(34, 197, 94)' },
   blue: { primary: 'rgb(59, 130, 246)' },
@@ -200,6 +231,71 @@ const HERO_ROLES = [
   'MCP integrations', 2000,
   'Real-time cloud notifications', 2000,
 ]
+
+const RESUME_URL = 'https://drive.google.com/file/d/1wzmmR0z68oF1bbAdFbrzcoAl6c1ZVeTh/view?usp=sharing'
+
+const SOCIALS = [
+  { icon: Github, name: 'GitHub', handle: 'github.com/isandeepmakwana', href: 'https://github.com/isandeepMakwana' },
+  { icon: Linkedin, name: 'LinkedIn', handle: 'linkedin.com/in/sandeepmakwana', href: 'https://www.linkedin.com/in/sandeepmakwana' },
+  { icon: Code2, name: 'LeetCode', handle: 'leetcode.com/isandeepMakwana', href: 'https://leetcode.com/isandeepMakwana' },
+]
+
+const HERO_FACTS = [
+  { value: '4+ yrs', label: 'building production software' },
+  { value: '3 products', label: 'shipped on ColorOS' },
+  { value: 'AI · Python · Java', label: 'core stack' },
+]
+
+// Light variants are darker so they stay readable on the paper background.
+const SKILL_GROUPS = [
+  {
+    title: 'AI & LLM',
+    dark: 'text-pink-400', light: 'text-pink-600', dot: 'bg-pink-400', chip: 'bg-pink-500/10 border-pink-500/20',
+    skills: ['AI Agents', 'LLM Tool Calling', 'Model Context Protocol (MCP)', 'Multi-LLM Routing', 'SSE Streaming', 'OAuth 2.1 / PKCE', 'Prompt Engineering'],
+  },
+  {
+    title: 'Languages',
+    dark: 'text-green-500', light: 'text-green-700', dot: 'bg-green-500', chip: 'bg-green-500/10 border-green-500/20',
+    skills: ['Python', 'Java', 'TypeScript', 'JavaScript', 'SQL', 'Bash', 'C', 'C++'],
+  },
+  {
+    title: 'Frameworks & Libraries',
+    dark: 'text-blue-400', light: 'text-blue-600', dot: 'bg-blue-400', chip: 'bg-blue-500/10 border-blue-500/20',
+    skills: ['FastAPI', 'Spring Boot', 'Pydantic', 'Pytest', 'Django', 'Flask', 'React', 'Tailwind', 'Pandas'],
+  },
+  {
+    title: 'Cloud & Data',
+    dark: 'text-yellow-500', light: 'text-amber-600', dot: 'bg-yellow-500', chip: 'bg-yellow-500/10 border-yellow-500/20',
+    skills: ['MongoDB', 'Redis', 'Firebase (FCM)', 'Docker', 'AWS', 'Jenkins', 'Git', 'CI/CD'],
+  },
+]
+
+const USED_IN_PROJECTS = new Set([
+  'AI Agents', 'LLM Tool Calling', 'Model Context Protocol (MCP)', 'Multi-LLM Routing', 'SSE Streaming', 'OAuth 2.1 / PKCE',
+  'Python', 'Java', 'FastAPI', 'Spring Boot', 'Pydantic', 'Pytest', 'MongoDB', 'Redis', 'Firebase (FCM)', 'Docker',
+])
+
+interface SectionHeadingProps {
+  index: string
+  label: string
+  title: string
+  subtitle: string
+  isDarkMode: boolean
+  children?: React.ReactNode
+}
+
+function SectionHeading({ index, label, title, subtitle, isDarkMode, children }: SectionHeadingProps) {
+  return (
+    <motion.div {...REVEAL_UP} className="mb-10 text-center">
+      <p className={`mb-2 font-mono text-sm ${isDarkMode ? 'text-green-500' : 'text-green-700'}`}>
+        {index} · {label}
+      </p>
+      <h2 className={`text-3xl md:text-4xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>{title}</h2>
+      <p className={`mt-3 max-w-2xl mx-auto ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>{subtitle}</p>
+      {children && <div className="mt-5 flex justify-center">{children}</div>}
+    </motion.div>
+  )
+}
 
 interface WindowProps {
   title: string
@@ -318,7 +414,7 @@ function Navigation({ activeWindow, isMenuOpen, onToggleMenu, onCloseMenu, isDar
           ))}
           <li className="md:ml-4">
             <motion.a
-              href="https://drive.google.com/file/d/1wzmmR0z68oF1bbAdFbrzcoAl6c1ZVeTh/view?usp=sharing"
+              href={RESUME_URL}
               target="_blank"
               rel="noopener noreferrer"
               whileHover={{ scale: 1.05 }}
@@ -500,6 +596,19 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
   const [showBackToTop, setShowBackToTop] = useState(false)
   useMotionValueEvent(scrollYProgress, 'change', (progress) => setShowBackToTop(progress > 0.15))
 
+  const tone = TONES[isDarkMode ? 'dark' : 'light']
+
+  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const form = new FormData(event.currentTarget)
+    const name = String(form.get('name') ?? '').trim()
+    const email = String(form.get('email') ?? '').trim()
+    const message = String(form.get('message') ?? '').trim()
+    const subject = `Portfolio message from ${name}`
+    const body = `${message}\n\n— ${name} (${email})`
+    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+  }
+
   const toggleDarkMode = () => {
     const nextIsDarkMode = !isDarkMode
     setIsDarkMode(nextIsDarkMode)
@@ -592,17 +701,20 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                 transition={{ duration: 0.5 }}
                 className="text-center z-10 px-4"
               >
-                {/* Greeting with Typing Effect */}
-                <motion.div 
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                <motion.a
+                  href={projectHref('mindpilot')}
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.2 }}
-                  className="mb-4"
+                  className={`group mb-6 inline-flex min-h-[44px] items-center gap-2 rounded-full border border-green-500/30 bg-green-500/10 px-4 text-sm transition-colors hover:border-green-500/60 ${tone.body}`}
                 >
-                  <span className={`text-lg ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>
-                    👋 Welcome to my portfolio
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60 animate-ping motion-reduce:animate-none" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
                   </span>
-                </motion.div>
+                  Now at OPPO & OnePlus · AI Mind Pilot on ColorOS 17
+                  <ArrowRight className={`w-4 h-4 transition-transform group-hover:translate-x-0.5 ${tone.green}`} />
+                </motion.a>
 
                 {/* Main Heading */}
                 <h1 className={`text-5xl md:text-7xl font-bold mb-6 ${isDarkMode ? 'text-white' : 'text-black'}`}>
@@ -641,10 +753,9 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                   transition={{ delay: 0.4 }}
                   className={`text-xl max-w-2xl mx-auto mb-8 ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}
                 >
-                  I'm a Software Engineer III at OPPO & OnePlus, building{' '}
-                  <span className="text-green-500 font-semibold">AI agents & LLM features</span> and{' '}
-                  <span className="text-green-500 font-semibold">Python backend services</span>,
-                  passionate about building elegant solutions to complex problems.
+                  Software Engineer III at OPPO & OnePlus, building{' '}
+                  <span className={`${tone.green} font-semibold`}>AI agents & LLM features</span> and the{' '}
+                  <span className={`${tone.green} font-semibold`}>cloud services</span> behind ColorOS travel alerts.
                 </motion.p>
                 {/* CTA Buttons */}
                 <motion.div
@@ -664,7 +775,7 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                     Get in touch
                   </motion.a>
                   <motion.a
-                    href="https://drive.google.com/file/d/1wzmmR0z68oF1bbAdFbrzcoAl6c1ZVeTh/view?usp=sharing"
+                    href={RESUME_URL}
                     target="_blank"
                     rel="noopener noreferrer"
                     whileHover={{ scale: 1.05 }}
@@ -677,27 +788,35 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                   </motion.a>
                 </motion.div>
 
-                {/* Social Links */}
+                <motion.dl
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className={`mt-10 mx-auto grid max-w-2xl grid-cols-3 divide-x ${isDarkMode ? 'divide-zinc-800' : 'divide-stone-300'}`}
+                >
+                  {HERO_FACTS.map((fact) => (
+                    <div key={fact.value} className="px-2 sm:px-4">
+                      <dt className={`text-base sm:text-2xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>{fact.value}</dt>
+                      <dd className={`mt-1 text-xs sm:text-sm ${tone.muted}`}>{fact.label}</dd>
+                    </div>
+                  ))}
+                </motion.dl>
+
                 <motion.div
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="mt-12 flex justify-center gap-6"
+                  transition={{ delay: 0.8 }}
+                  className="mt-8 flex justify-center gap-2"
                 >
-                  {[
-                    { icon: Github, href: 'https://github.com/isandeepMakwana', label: 'GitHub' },
-                    { icon: Linkedin, href: 'https://www.linkedin.com/in/sandeepmakwana', label: 'LinkedIn' },
-                    { icon: Code2, href: 'https://leetcode.com/isandeepMakwana', label: 'LeetCode' },
-                    { icon: Mail, href: 'mailto:sandeepmakwana.work@gmail.com', label: 'Email' }
-                  ].map((social, index) => (
+                  {[...SOCIALS, { icon: Mail, name: 'Email', href: `mailto:${CONTACT_EMAIL}` }].map((social) => (
                     <motion.a
-                      key={index}
+                      key={social.name}
                       href={social.href}
                       target="_blank"
                       rel="noopener noreferrer"
                       whileHover={{ scale: 1.1, y: -2 }}
-                      className={`text-zinc-400 hover:text-green-500 transition-colors duration-300`}
-                      aria-label={social.label}
+                      className={`flex h-11 w-11 items-center justify-center hover:text-green-500 transition-colors duration-300 ${tone.muted}`}
+                      aria-label={social.name}
                     >
                       <social.icon className="w-6 h-6" />
                     </motion.a>
@@ -724,140 +843,93 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
             </section>
 
             <section id="about" className="py-20">
-              <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>About Me</motion.h2>
+              <SectionHeading
+                index="01"
+                label="About"
+                title="About Me"
+                subtitle="Who I am, what I work with, and what I've been recognised for."
+                isDarkMode={isDarkMode}
+              />
               <div className="grid md:grid-cols-2 gap-6">
                 <Window style={terminalStyle} colorTheme={colorTheme} title="about-me.txt" isActive>
-                  <div className="font-mono space-y-4 text-zinc-300">
-                    <div className="typing-effect">
-                      <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
-                        <span className="text-zinc-600 select-none">01</span>
-                        <span>
-                          Hi! I'm <span className="text-green-500 font-semibold">Sandeep Makwana</span>, 
-                          a <span className="text-blue-400 font-semibold">Software Engineer III</span> at OPPO & OnePlus.
-                        </span>
+                  <div className={`font-mono space-y-2 ${tone.body}`}>
+                    {[
+                      <>
+                        <span className={`${tone.green} font-semibold`}>Software Engineer III</span> at OPPO & OnePlus, Hyderabad.
+                      </>,
+                      <>
+                        <span className={tone.yellow}>4+ years</span> building backend services and AI features that run in production.
+                      </>,
+                      <>
+                        Now: <span className={isDarkMode ? 'text-pink-400' : 'text-pink-600'}>AI Mind Pilot agents</span>, LLM tool calling and
+                        real-time <span className={tone.blue}>travel alerts</span> for ColorOS.
+                      </>,
+                      <>
+                        Before: <span className={tone.blue}>AWS data platforms</span> and React apps for clinical trials at ConsultAdd.
+                      </>,
+                    ].map((line, i) => (
+                      <div key={i} className={`flex gap-4 p-2 rounded transition-colors ${tone.rowHover}`}>
+                        <span className={`${tone.lineNo} select-none`}>{String(i + 1).padStart(2, '0')}</span>
+                        <span>{line}</span>
                       </div>
-                      <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
-                        <span className="text-zinc-600 select-none">02</span>
-                        <span>
-                          With <span className="text-yellow-500">4+ years</span> of experience in building
-                          <span className="text-purple-400"> scalable applications</span>
-                        </span>
-                      </div>
-                      <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
-                        <span className="text-zinc-600 select-none">03</span>
-                        <span>
-                          Specializing in <span className="text-pink-400">AI agents & LLMs</span> and
-                          <span className="text-orange-400"> Python backend systems</span>
-                        </span>
-                      </div>
-                      <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
-                        <span className="text-zinc-600 select-none">04</span>
-                        <span>
-                          Passionate about <span className="text-green-400">clean code</span> and
-                          <span className="text-blue-400"> optimal solutions</span>
-                        </span>
-                      </div>
-                      <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
-                        <span className="text-zinc-600 select-none">05</span>
-                        <span>
-                          Recognized as <span className="text-yellow-500">Employee of the Month 7 times</span>
-                        </span>
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </Window>
                 
                 <div className="space-y-6">
                   <Window style={terminalStyle} colorTheme={colorTheme} title="skills.json">
                     <div className="space-y-6">
-                      <div>
-                        <h3 className="text-green-500 mb-4 font-semibold flex items-center gap-2">
-                          <span className="w-2 h-2 bg-green-500 rounded-full"></span>
-                          Languages & Tools
-                        </h3>
-                        <div className="flex flex-wrap gap-3">
-                          {['Python', 'JavaScript', 'TypeScript', 'C', 'C++', 'SQL', 'Bash', 'Java'].map(skill => (
-                            <motion.span
-                              key={skill}
-                              whileHover={{ scale: 1.05 }}
-                              className="px-3 py-1.5 bg-zinc-800/70 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700/70 transition-colors cursor-default"
-                            >
-                              {skill}
-                            </motion.span>
-                          ))}
+                      <p className={`flex items-center gap-2 text-xs font-mono ${tone.muted}`}>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-white' : 'bg-stone-700'}`} />
+                        used in my projects
+                      </p>
+                      {SKILL_GROUPS.map((group) => (
+                        <div key={group.title}>
+                          <h3 className={`mb-3 font-semibold flex items-center gap-2 ${isDarkMode ? group.dark : group.light}`}>
+                            <span className={`w-2 h-2 rounded-full ${group.dot}`} />
+                            {group.title}
+                          </h3>
+                          <ul className="flex flex-wrap gap-2">
+                            {group.skills.map((skill) => {
+                              const used = USED_IN_PROJECTS.has(skill)
+                              return (
+                                <motion.li
+                                  key={skill}
+                                  whileHover={{ scale: 1.05 }}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm cursor-default ${group.chip} ${tone.body}`}
+                                >
+                                  {skill}
+                                  {used && (
+                                    <>
+                                      <span aria-hidden="true" className={`w-1.5 h-1.5 rounded-full ${isDarkMode ? 'bg-white' : 'bg-stone-700'}`} />
+                                      <span className="sr-only">(used in my projects)</span>
+                                    </>
+                                  )}
+                                </motion.li>
+                              )
+                            })}
+                          </ul>
                         </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-blue-400 mb-4 font-semibold flex items-center gap-2">
-                          <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
-                          Frameworks & Libraries
-                        </h3>
-                        <div className="flex flex-wrap gap-3">
-                          {['FastAPI', 'Django', 'Flask', 'Spring Boot', 'Pydantic', 'React', 'Tailwind', 'Pytest', 'Pandas'].map(skill => (
-                            <motion.span
-                              key={skill}
-                              whileHover={{ scale: 1.05 }}
-                              className="px-3 py-1.5 bg-zinc-800/70 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700/70 transition-colors cursor-default"
-                            >
-                              {skill}
-                            </motion.span>
-                          ))}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-yellow-500 mb-4 font-semibold flex items-center gap-2">
-                          <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
-                          Cloud & DevOps
-                        </h3>
-                        <div className="flex flex-wrap gap-3">
-                          {['AWS', 'Docker', 'MongoDB', 'Redis', 'Firebase (FCM)', 'Jenkins', 'Git', 'CI/CD'].map(skill => (
-                            <motion.span
-                              key={skill}
-                              whileHover={{ scale: 1.05 }}
-                              className="px-3 py-1.5 bg-zinc-800/70 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700/70 transition-colors cursor-default"
-                            >
-                              {skill}
-                            </motion.span>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-pink-400 mb-4 font-semibold flex items-center gap-2">
-                          <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
-                          AI & LLM
-                        </h3>
-                        <div className="flex flex-wrap gap-3">
-                          {['LLM Tool Calling', 'AI Agents', 'Model Context Protocol (MCP)', 'Prompt Engineering', 'Multi-LLM Routing', 'SSE Streaming', 'OAuth 2.1 / PKCE'].map(skill => (
-                            <motion.span
-                              key={skill}
-                              whileHover={{ scale: 1.05 }}
-                              className="px-3 py-1.5 bg-zinc-800/70 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700/70 transition-colors cursor-default"
-                            >
-                              {skill}
-                            </motion.span>
-                          ))}
-                        </div>
-                      </div>
+                      ))}
                     </div>
                   </Window>
 
                   <Window style={terminalStyle} colorTheme={colorTheme} title="achievements.md">
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {[
-                        { icon: '🏆', color: 'text-green-500', text: 'AWS Certified Solutions Architect - Associate' },
-                        { icon: '👥', color: 'text-yellow-500', text: 'Led team of 28 developers with 30% faster delivery' },
-                        { icon: '🎯', color: 'text-blue-400', text: '7x Employee of the Month' }
-                      ].map((achievement, index) => (
+                        { icon: Award, color: tone.green, box: 'bg-green-500/10', text: 'AWS Certified Solutions Architect – Associate' },
+                        { icon: Users, color: tone.yellow, box: 'bg-yellow-500/10', text: 'Led a team of 28 developers, delivering 30% faster' },
+                        { icon: Target, color: tone.blue, box: 'bg-blue-500/10', text: 'Employee of the Month, 7 times' },
+                      ].map((achievement) => (
                         <motion.div
-                          key={index}
+                          key={achievement.text}
                           whileHover={{ x: 4 }}
-                          className="flex items-center gap-3 p-2 hover:bg-zinc-800/50 rounded-lg transition-colors"
+                          className={`flex items-center gap-3 p-2 ${tone.rowHover} rounded-lg transition-colors`}
                         >
-                          <span className="text-xl">{achievement.icon}</span>
-                          <span className={`${achievement.color} font-medium`}>{achievement.text}</span>
+                          <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${achievement.box} ${achievement.color}`}>
+                            <achievement.icon className="w-5 h-5" />
+                          </span>
+                          <span className={`font-medium ${tone.body}`}>{achievement.text}</span>
                         </motion.div>
                       ))}
                     </div>
@@ -867,71 +939,42 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
             </section>
 
             <section id="projects" className="py-20">
-              <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold mb-3 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Projects</motion.h2>
-              <p className={`max-w-3xl mx-auto mb-8 text-center ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>
-                An AI assistant and two event-driven cloud services for a smartphone OS. Open a project to see its story.
-              </p>
+              <SectionHeading
+                index="02"
+                label="Projects"
+                title="Projects"
+                subtitle="An AI assistant and two event-driven cloud services for a smartphone OS. Tap a card to watch how each product works, step by step."
+                isDarkMode={isDarkMode}
+              />
               <Window style={terminalStyle} colorTheme={colorTheme} title="projects.json" isActive>
                 <div className="grid md:grid-cols-3 gap-5">
-                  {PROJECTS.map((project, i) => {
-                    const accent = ACCENTS[project.accent]
-                    return (
-                      <motion.a
-                        key={project.id}
-                        href={projectHref(project.slug)}
-                        aria-label={`Read the story of ${project.shortTitle}`}
-                        className={`group relative flex flex-col rounded-xl border ${accent.border} ${accent.hoverCard} p-5 overflow-hidden shadow-lg shadow-transparent transition-[border-color,box-shadow] duration-300 cursor-pointer
-                          ${isDarkMode ? 'bg-zinc-900/60' : 'bg-white'}`}
-                        initial={{ opacity: 0, y: 30 }}
-                        whileInView={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 220, damping: 24, delay: i * 0.05 } }}
-                        viewport={{ once: true, amount: 0.2 }}
-                        whileHover={{ y: -4 }}
-                        transition={{ type: 'spring', stiffness: 220, damping: 24 }}
-                      >
-                        <span className={`absolute inset-x-0 top-0 h-0.5 ${accent.bgSolid}`} />
-                        <span className={`font-mono text-sm ${accent.text}`}>{project.id}</span>
-                        <h3 className={`mt-2 text-xl font-bold font-mono ${isDarkMode ? 'text-white' : 'text-black'}`}>{project.shortTitle}</h3>
-                        <p className="mt-1 font-mono text-xs text-zinc-500">{project.meta}</p>
-                        <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>{project.description}</p>
-                        <div className="mt-4">
-                          <ProjectCardPreview slug={project.slug} />
-                        </div>
-                        <div className="mt-4 flex flex-wrap gap-2">
-                          {project.tech.slice(0, 4).map((tech) => (
-                            <span key={tech} className={`rounded-md border ${accent.border} px-2 py-0.5 font-mono text-[11px] ${accent.text}`}>
-                              {tech}
-                            </span>
-                          ))}
-                        </div>
-                        <span className={`mt-auto pt-5 inline-flex items-center gap-2 font-mono text-sm ${accent.text}`}>
-                          Read the story
-                          <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5" />
-                        </span>
-                      </motion.a>
-                    )
-                  })}
+                  {PROJECTS.map((project, i) => (
+                    <ProjectCard key={project.id} project={project} index={i} isDarkMode={isDarkMode} />
+                  ))}
                 </div>
               </Window>
             </section>
 
             <section id="career" className="py-20">
-              <div className="flex items-center justify-between mb-8">
-                <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                  Career Journey
-                </motion.h2>
+              <SectionHeading
+                index="03"
+                label="Career"
+                title="Career Journey"
+                subtitle="From AWS data platforms to AI on a smartphone OS."
+                isDarkMode={isDarkMode}
+              >
                 <motion.a
-                  href="https://drive.google.com/file/d/1wzmmR0z68oF1bbAdFbrzcoAl6c1ZVeTh/view?usp=sharing"
+                  href={RESUME_URL}
                   target="_blank"
                   rel="noopener noreferrer"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 rounded-lg text-green-500 
-                    hover:bg-zinc-700 transition-colors duration-300 border border-green-500/20"
+                  className={`inline-flex min-h-[44px] items-center gap-2 px-4 rounded-lg transition-colors duration-300 border border-green-500/20 ${tone.button} ${tone.green}`}
                 >
                   <FileText className="w-4 h-4" />
                   <span className="font-mono text-sm">Sandeep_makwana_resume.pdf</span>
                 </motion.a>
-              </div>
+              </SectionHeading>
               <Window style={terminalStyle} colorTheme={colorTheme} title="career.json" isActive={activeWindow === 'career'}>
                 <div className="space-y-12">
                   {/* OPPO & OnePlus */}
@@ -961,14 +1004,14 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                         <span className="text-zinc-500">•</span>
                         <span className="text-zinc-500">Hyderabad</span>
                       </div>
-                      <ul className="space-y-3 text-zinc-400">
+                      <ul className={`space-y-3 ${tone.muted}`}>
                         <li className="flex gap-2">
                           <span className="text-pink-500">→</span>
-                          <span>Prototyped an LLM-powered food-ordering agent over the Model Context Protocol (MCP) for the MindPilot AI assistant, with schema-driven tool calls and a human-in-the-loop checkout gate</span>
+                          <span>Built MCP tooling for the AI Mind Pilot Agent gateway (Java, Spring Boot): prompts and resources APIs, plus OAuth 2.1 + PKCE partner account linking with live integration tests</span>
                         </li>
                         <li className="flex gap-2">
                           <span className="text-pink-500">→</span>
-                          <span>Shipped country-level LLM availability controls (admin API, UI and middleware) for MindPilot's multi-model Ask mode</span>
+                          <span>Shipped country-level model controls (admin API, UI and middleware) for MindPilot's multi-model Ask mode</span>
                         </li>
                         <li className="flex gap-2">
                           <span className="text-pink-500">→</span>
@@ -981,10 +1024,27 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                       </ul>
                       <div className="flex flex-wrap gap-2 pt-2">
                         {['Python', 'FastAPI', 'LLM / MCP', 'Java', 'Spring Boot', 'MongoDB', 'Redis', 'FCM', 'Docker'].map((tech) => (
-                          <span key={tech} className="px-2 py-1 bg-zinc-800/50 rounded-full text-xs text-zinc-400">
+                          <span key={tech} className={`px-2 py-1 rounded-full text-xs ${tone.smallChip}`}>
                             {tech}
                           </span>
                         ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        <span className={`font-mono text-xs ${tone.muted}`}>See the work:</span>
+                        {PROJECTS.map((project) => {
+                          const accent = ACCENTS[project.accent]
+                          return (
+                            <a
+                              key={project.slug}
+                              href={projectHref(project.slug)}
+                              className={`group/chip inline-flex min-h-[44px] items-center gap-2 rounded-full border px-3 text-sm transition-colors ${accent.border} ${accent.bg} ${tone.body} ${accent.hoverCard}`}
+                            >
+                              <span className={`w-1.5 h-1.5 rounded-full ${accent.bgSolid}`} />
+                              {project.shortTitle}
+                              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover/chip:translate-x-0.5" />
+                            </a>
+                          )
+                        })}
                       </div>
                     </div>
                   </motion.div>
@@ -1006,14 +1066,14 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                         <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
                           Software Engineer II
                         </h3>
-                        <span className="text-green-500 font-mono text-sm">Jul 2022 - Mar 2026</span>
+                        <span className={`${tone.green} font-mono text-sm`}>Jul 2022 - Mar 2026</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`font-semibold ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>ConsultAdd</span>
                         <span className="text-zinc-500">•</span>
                         <span className="text-zinc-500">Pune</span>
                       </div>
-                      <ul className="space-y-3 text-zinc-400">
+                      <ul className={`space-y-3 ${tone.muted}`}>
                         <li className="flex gap-2">
                           <span className="text-green-500">→</span>
                           <span>Designed and deployed AWS data lake solution using S3, Glue, and Athena, enhancing data accessibility</span>
@@ -1037,7 +1097,7 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                       </ul>
                       <div className="flex flex-wrap gap-2 pt-2">
                         {['AWS', 'React', 'Django', 'Python', 'Snowflake', 'Docker', 'CI/CD'].map((tech) => (
-                          <span key={tech} className="px-2 py-1 bg-zinc-800/50 rounded-full text-xs text-zinc-400">
+                          <span key={tech} className={`px-2 py-1 rounded-full text-xs ${tone.smallChip}`}>
                             {tech}
                           </span>
                         ))}
@@ -1045,90 +1105,44 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                     </div>
                   </motion.div>
 
-                  {/* ConsultAdd Internship */}
+                  {/* Earlier: internship and education */}
                   <motion.div
                     className="relative pl-8 border-l-2 border-blue-500/20"
                     initial={{ opacity: 0, x: -24 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true, amount: 0.2 }}
-                    whileHover={{ x: 6 }}
                     transition={{ type: 'spring', stiffness: 200, damping: 24 }}
                   >
                     <div className="absolute -left-[9px] top-0">
                       <div className="w-4 h-4 rounded-full bg-blue-500" />
                     </div>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                          Software Engineer Intern
-                        </h3>
-                        <span className="text-blue-500 font-mono text-sm">Jan 2022 - Jun 2022</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>ConsultAdd</span>
-                        <span className="text-zinc-500">•</span>
-                        <span className="text-zinc-500">Remote</span>
-                      </div>
-                      <ul className="space-y-3 text-zinc-400">
-                        <li className="flex gap-2">
-                          <span className="text-blue-500">→</span>
-                          <span>Restructured legacy codebase to align with industry best practices</span>
-                        </li>
-                        <li className="flex gap-2">
-                          <span className="text-blue-500">→</span>
-                          <span>Engineered AWS Step Functions for Glue job orchestration</span>
-                        </li>
-                        <li className="flex gap-2">
-                          <span className="text-blue-500">→</span>
-                          <span>Increased unit test coverage from 60% to 80%</span>
-                        </li>
-                      </ul>
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        {['AWS', 'Python', 'Step Functions', 'Glue', 'Unit Testing'].map((tech) => (
-                          <span key={tech} className="px-2 py-1 bg-zinc-800/50 rounded-full text-xs text-zinc-400">
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  </motion.div>
-
-                  {/* Education */}
-                  <motion.div
-                    className="relative pl-8 border-l-2 border-purple-500/20"
-                    initial={{ opacity: 0, x: -24 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true, amount: 0.2 }}
-                    whileHover={{ x: 6 }}
-                    transition={{ type: 'spring', stiffness: 200, damping: 24 }}
-                  >
-                    <div className="absolute -left-[9px] top-0">
-                      <div className="w-4 h-4 rounded-full bg-purple-500" />
-                    </div>
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                          Bachelor of Technology in Computer Science
-                        </h3>
-                        <span className="text-purple-500 font-mono text-sm">Graduated Jun 2022</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`font-semibold ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>
-                          Rajiv Gandhi Proudyogiki Vishwavidyalaya
-                        </span>
-                        <span className="text-zinc-500">•</span>
-                        <span className="text-zinc-500">Bhopal, MP</span>
-                      </div>
-                      <div className="text-zinc-400">
-                        <span className="text-purple-500 font-semibold">CGPA:</span> 8.6/10.0
-                      </div>
-                      <div className="flex flex-wrap gap-2 pt-2">
-                        {['Data Structures', 'Algorithms', 'Computer Networks', 'Operating Systems'].map((subject) => (
-                          <span key={subject} className="px-2 py-1 bg-zinc-800/50 rounded-full text-xs text-zinc-400">
-                            {subject}
-                          </span>
-                        ))}
-                      </div>
+                    <h3 className={`mb-4 font-mono text-sm uppercase tracking-wider ${tone.muted}`}>Earlier</h3>
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {[
+                        {
+                          title: 'Software Engineer Intern',
+                          where: 'ConsultAdd · Remote',
+                          when: 'Jan – Jun 2022',
+                          detail: 'Orchestrated AWS Glue jobs with Step Functions and raised unit test coverage from 60% to 80%.',
+                          color: isDarkMode ? 'text-blue-400' : 'text-blue-600',
+                        },
+                        {
+                          title: 'B.Tech, Computer Science',
+                          where: 'RGPV · Bhopal, MP',
+                          when: 'Graduated 2022',
+                          detail: 'CGPA 8.6 / 10. Data structures, algorithms, networks and operating systems.',
+                          color: isDarkMode ? 'text-purple-400' : 'text-purple-600',
+                        },
+                      ].map((item) => (
+                        <div key={item.title} className={`rounded-lg border p-4 ${tone.divider}`}>
+                          <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                            <p className={`font-semibold ${isDarkMode ? 'text-white' : 'text-black'}`}>{item.title}</p>
+                            <span className={`font-mono text-xs ${item.color}`}>{item.when}</span>
+                          </div>
+                          <p className="text-sm text-zinc-500">{item.where}</p>
+                          <p className={`mt-2 text-sm ${tone.muted}`}>{item.detail}</p>
+                        </div>
+                      ))}
                     </div>
                   </motion.div>
                 </div>
@@ -1136,40 +1150,46 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
             </section>
 
             <section id="contact" className="py-20">
-              <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Contact</motion.h2>
+              <SectionHeading
+                index="04"
+                label="Contact"
+                title="Let's talk"
+                subtitle="Hiring, collaborating, or curious about one of the projects? Send me a message."
+                isDarkMode={isDarkMode}
+              />
               <div className="grid md:grid-cols-2 gap-6">
                 <Window style={terminalStyle} colorTheme={colorTheme} title="contact-form.jsx" isActive>
-                  <form className="space-y-4">
+                  <form className="space-y-4" onSubmit={handleContactSubmit}>
                     <div>
-                      <label htmlFor="name" className="block text-sm font-medium text-zinc-400 mb-1">Name</label>
+                      <label htmlFor="name" className={`block text-sm font-medium mb-1 ${tone.muted}`}>Name</label>
                       <input
                         type="text"
                         id="name"
                         name="name"
                         placeholder="Your name"
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-zinc-600"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${tone.input}`}
                         required
                       />
                     </div>
                     <div>
-                      <label htmlFor="email" className="block text-sm font-medium text-zinc-400 mb-1">Email</label>
+                      <label htmlFor="email" className={`block text-sm font-medium mb-1 ${tone.muted}`}>Email</label>
                       <input
                         type="email"
                         id="email"
                         name="email"
                         placeholder="your.email@example.com"
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-zinc-600"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${tone.input}`}
                         required
                       />
                     </div>
                     <div>
-                      <label htmlFor="message" className="block text-sm font-medium text-zinc-400 mb-1">Message</label>
+                      <label htmlFor="message" className={`block text-sm font-medium mb-1 ${tone.muted}`}>Message</label>
                       <textarea
                         id="message"
                         name="message"
                         rows={4}
                         placeholder="Your message here..."
-                        className="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-green-500 placeholder:text-zinc-600"
+                        className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-green-500 ${tone.input}`}
                         required
                       ></textarea>
                     </div>
@@ -1182,10 +1202,11 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                       <Mail className="w-4 h-4" />
                       Send Message
                     </motion.button>
+                    <p className={`text-xs text-center ${tone.muted}`}>Opens your email app with the message ready to send.</p>
                   </form>
                   {/* Quick Response Promise */}
-                  <div className="pt-4 border-t border-zinc-800 mt-4">
-                    <div className="flex items-center gap-2 text-sm text-zinc-400">
+                  <div className={`pt-4 border-t mt-4 ${tone.divider}`}>
+                    <div className={`flex items-center gap-2 text-sm ${tone.muted}`}>
                       <Clock className="w-4 h-4" />
                       <span>Usually responds within 24 hours</span>
                     </div>
@@ -1197,48 +1218,44 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                     {/* Contact Information */}
                     <div className="space-y-4">
                       {[
-                        { icon: Mail, label: 'sandeepmakwana.work@gmail.com', href: 'mailto:sandeepmakwana.work@gmail.com' },
+                        { icon: Mail, label: CONTACT_EMAIL, href: `mailto:${CONTACT_EMAIL}` },
                         { icon: Phone, label: '+91 6263216081', href: 'tel:+916263216081' },
-                        { icon: MapPin, label: 'Pune, Maharashtra, India', href: null },
+                        { icon: MapPin, label: 'Hyderabad, Telangana, India', href: null },
                       ].map((contact, index) => (
                         <motion.div
                           key={index}
                           whileHover={contact.href ? { x: 4 } : {}}
-                          className={`group flex items-center gap-4 p-2 rounded-md ${contact.href ? 'hover:bg-zinc-800/50' : ''} transition-colors`}
+                          className={`group flex items-center gap-4 p-2 rounded-md ${contact.href ? tone.rowHover : ''} transition-colors`}
                         >
-                          <contact.icon className={`text-zinc-400 ${contact.href ? 'group-hover:text-green-500' : ''} transition-colors`} />
+                          <contact.icon className={`${tone.muted} ${contact.href ? 'group-hover:text-green-500' : ''} transition-colors`} />
                           {contact.href ? (
-                            <a href={contact.href} className="text-zinc-300 group-hover:text-green-500 transition-colors">{contact.label}</a>
+                            <a href={contact.href} className={`${tone.body} group-hover:text-green-500 transition-colors`}>{contact.label}</a>
                           ) : (
-                            <span className="text-zinc-300">{contact.label}</span>
+                            <span className={tone.body}>{contact.label}</span>
                           )}
                         </motion.div>
                       ))}
                     </div>
 
                     {/* Social Links */}
-                    <div className="pt-4 border-t border-zinc-800">
+                    <div className={`pt-4 border-t ${tone.divider}`}>
                       <div className="space-y-4">
-                        {[
-                          { icon: Github, label: 'github.com/isandeepmakwana', href: 'https://github.com/isandeepMakwana' },
-                          { icon: Linkedin, label: 'linkedin.com/in/sandeepmakwana', href: 'https://www.linkedin.com/in/sandeepmakwana' },
-                          { icon: Code2, label: 'leetcode.com/isandeepMakwana', href: 'https://leetcode.com/isandeepMakwana' },
-                        ].map((social, index) => (
+                        {SOCIALS.map((social) => (
                           <motion.div
-                            key={index}
+                            key={social.name}
                             whileHover={{ x: 4 }}
-                            className="group flex items-center gap-4 p-2 rounded-md hover:bg-zinc-800/50 transition-colors"
+                            className={`group flex items-center gap-4 p-2 rounded-md ${tone.rowHover} transition-colors`}
                           >
-                            <social.icon className="text-zinc-400 group-hover:text-green-500 transition-colors" />
-                            <a href={social.href} className="text-zinc-300 group-hover:text-green-500 transition-colors">{social.label}</a>
-                            <ArrowUpRight className="text-zinc-600 w-4 h-4 group-hover:text-green-500 transition-colors ml-auto" />
+                            <social.icon className={`${tone.muted} group-hover:text-green-500 transition-colors`} />
+                            <a href={social.href} target="_blank" rel="noopener noreferrer" className={`${tone.body} group-hover:text-green-500 transition-colors`}>{social.handle}</a>
+                            <ArrowUpRight className={`${tone.lineNo} w-4 h-4 group-hover:text-green-500 transition-colors ml-auto`} />
                           </motion.div>
                         ))}
                       </div>
                     </div>
 
                     {/* Availability Status */}
-                    <div className="pt-4 border-t border-zinc-800">
+                    <div className={`pt-4 border-t ${tone.divider}`}>
                       <motion.div 
                         className="flex items-center gap-3 p-2"
                         animate={{ opacity: [0.5, 1, 0.5] }}
@@ -1248,7 +1265,7 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                           <div className="w-3 h-3 rounded-full bg-green-500"></div>
                           <div className="absolute inset-0 w-3 h-3 rounded-full bg-green-500 animate-ping"></div>
                         </div>
-                        <span className="text-zinc-300">Available for new opportunities</span>
+                        <span className={tone.body}>Available for new opportunities</span>
                       </motion.div>
                     </div>
                   </div>
@@ -1257,9 +1274,24 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
             </section>
           </main>
 
-          <footer className="bg-black/80 backdrop-blur-sm py-8">
-            <div className="container mx-auto px-6 text-center">
-              <p className="text-zinc-400">Copyright &copy; 2026 Sandeep Makwana. All rights reserved.</p>
+          <footer className={`border-t backdrop-blur-sm py-10 ${isDarkMode ? 'bg-black/80 border-zinc-800' : 'bg-white/80 border-stone-200'}`}>
+            <div className="container mx-auto px-6 flex flex-col items-center gap-4 text-center">
+              <div className="flex gap-2">
+                {[...SOCIALS, { icon: Mail, name: 'Email', href: `mailto:${CONTACT_EMAIL}` }].map((social) => (
+                  <a
+                    key={social.name}
+                    href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={social.name}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full hover:text-green-500 transition-colors ${tone.muted} ${tone.rowHover}`}
+                  >
+                    <social.icon className="w-5 h-5" />
+                  </a>
+                ))}
+              </div>
+              <p className={`font-mono text-xs ${tone.muted}`}>Built with React, TypeScript, Tailwind CSS and Framer Motion</p>
+              <p className={`text-sm ${tone.muted}`}>&copy; 2026 Sandeep Makwana</p>
             </div>
           </footer>
           <AnimatePresence>

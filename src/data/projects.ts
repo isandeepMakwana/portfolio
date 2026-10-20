@@ -5,6 +5,11 @@ export interface BuiltItem {
   text: string
 }
 
+export interface HowItWorksPart {
+  heading: string
+  points: string[]
+}
+
 export interface Project {
   id: string
   slug: string
@@ -12,9 +17,13 @@ export interface Project {
   shortTitle: string
   meta: string
   accent: ProjectAccent
+  label: string
+  tagline: string
   description: string
-  useCase: string
-  howItWorks: string
+  storyTitle: string
+  howItWorks: HowItWorksPart[]
+  howItWorksCaption: string
+  decisions: BuiltItem[]
   role: string
   built: BuiltItem[]
   tech: string[]
@@ -24,62 +33,162 @@ export const PROJECTS: Project[] = [
   {
     id: '01',
     slug: 'mindpilot',
-    title: 'MindPilot — AI Assistant (Ask & Agent modes)',
+    title: 'AI Mind Pilot',
     shortTitle: 'MindPilot',
-    meta: 'Python + Java · LLM / MCP · 2026',
+    meta: 'ColorOS 16 & 17 · Python + Java · LLM',
     accent: 'violet',
-    description: 'The AI assistant shipped with a new ColorOS release: "Ask" mode answers questions with multiple LLMs, and "Agent" mode completes real tasks by calling partner services as tools.',
-    useCase: 'In Ask mode a user asks a question and gets a streamed answer, or compares answers from several models side by side. In Agent mode the user says something like "order a paneer wrap from a nearby place" and the assistant searches restaurants, builds the cart, shows the bill and places the order only after the user confirms.',
-    howItWorks: 'Ask mode is a Python FastAPI service that routes each query by intent, calls several LLM providers in parallel and streams the result over Server-Sent Events. Agent mode is a Java Spring Boot gateway that talks to partner tools over the Model Context Protocol (MCP), handles partner OAuth sign-in and keeps the list of allowed tools.',
-    role: 'Feature developer on a large multi-team codebase',
-    built: [
-      { title: 'MCP food-ordering agent', text: 'Prototyped a food-ordering AI agent over MCP in Python: an LLM planner picks the tool and fills its arguments from each tool\'s JSON schema, with a keyword-scored fallback when the model\'s confidence is low.' },
-      { title: 'Human-in-the-loop gate', text: 'The agent reviews the cart and itemised bill with the user and refuses to check out without explicit confirmation.' },
-      { title: 'OAuth 2.1 + PKCE', text: 'Partner sign-in with expiring token storage, plus query routing that auto-selects the food connector from the user\'s message.' },
-      { title: 'Java Agent gateway', text: 'Added MCP prompts and resources APIs, fixed an OAuth service startup dependency cycle, and wrote live OAuth integration tests.' },
-      { title: 'Country-level model controls', text: 'Shipped an admin API and UI, plus request middleware that hides blocked LLMs per country, backed by unit tests.' },
+    label: 'ColorOS 16 & 17',
+    tagline: 'Ask mode answers. Agent mode gets things done.',
+    description:
+      'The AI assistant built into ColorOS on OPPO and OnePlus phones: side-by-side answers from Gemini, Perplexity and ChatGPT in Ask mode, and multi-step tasks with Manus and ChatGPT in Agent mode.',
+    storyTitle: 'Inside MindPilot',
+    howItWorks: [
+      {
+        heading: 'Ask service · Python',
+        points: [
+          'Safety check on every question',
+          'Detects intent and picks the models',
+          'Checks the user\'s quota',
+          'Adds the most relevant Mind Space notes',
+          'Calls models in parallel and streams answers (SSE)',
+          'Swaps in another model if one is slow',
+        ],
+      },
+      {
+        heading: 'Agent gateway · Java',
+        points: [
+          'Creates Manus tasks and streams the plan and next steps to the phone',
+          'The on-device agent works on your files; they are not stored in the cloud',
+          'OpenAI-compatible chat, responses and images',
+          'Free allowance and link-your-own-account (OAuth)',
+          'Partner tools over MCP with an allow-list',
+        ],
+      },
     ],
-    tech: ['Python', 'FastAPI', 'LLM tool calling', 'MCP', 'OAuth 2.1 / PKCE', 'SSE streaming', 'Java 17', 'Spring Boot', 'MongoDB', 'Redis', 'pytest'],
+    howItWorksCaption: 'Two clouds, one assistant: Python for fast multi-model answers, Java for long-running agent tasks.',
+    decisions: [
+      { title: 'Stream first, then compare', text: 'Answers appear as they are generated, so three models feel fast instead of waiting for the slowest.' },
+      { title: 'Personal context with limits', text: 'Only the most relevant Mind Space notes are added, re-ranked and capped so prompts stay small.' },
+      { title: 'Fallback on slow models', text: 'If a model takes too long to start answering, another one takes over.' },
+      { title: 'Agents need guardrails', text: 'Content safety checks, per-user quotas and an allow-list of tools.' },
+    ],
+    role: 'Software Engineer III on a multi-team codebase',
+    built: [
+      { title: 'MCP tooling in the Java gateway', text: 'Added MCP prompts and resources APIs to the Agent gateway and fixed an OAuth service startup dependency cycle.' },
+      { title: 'OAuth 2.1 + PKCE account linking', text: 'Partner account linking with expiring token storage, covered by live OAuth integration tests.' },
+      { title: 'Country-level model controls', text: 'Shipped an admin API and UI, plus request middleware that hides models blocked in a country, backed by unit tests.' },
+    ],
+    tech: ['Python', 'FastAPI', 'SSE streaming', 'LLM orchestration', 'MCP', 'Java 17', 'Spring Boot', 'OAuth 2.1 / PKCE', 'MongoDB', 'Redis', 'Kafka'],
   },
   {
     id: '02',
     slug: 'flight-alerts',
     title: 'Flight Alerts Cloud',
     shortTitle: 'Flight Alerts',
-    meta: 'Python · FastAPI · 2026',
+    meta: 'ColorOS AI Mind Suggest · Python · FastAPI',
     accent: 'cyan',
-    description: 'Cloud backend that tracks a traveller\'s flights and pushes real-time status updates to their phone.',
-    useCase: 'A traveller adds a flight from the phone app, a forwarded booking SMS or a booking email. From then on they get a push notification when the flight is delayed, the gate changes, or it is cancelled — without opening an airline app.',
-    howItWorks: 'A FastAPI service stores subscriptions in MongoDB, receives signed status callbacks from a third-party flight-data provider and also polls it on a schedule. Real changes are pushed through Firebase Cloud Messaging; Redis holds caches and locks so the service runs safely on several workers and hosts.',
+    label: 'ColorOS AI Mind Suggest',
+    tagline: 'Your flight status, on your home screen, before you think to check.',
+    description: 'The cloud service behind live flight cards and push alerts on OPPO and OnePlus phones.',
+    storyTitle: 'The full trip · DEL → BOM',
+    howItWorks: [
+      {
+        heading: 'In',
+        points: [
+          'Phone app, forwarded booking SMS (an LLM reads it) or email check',
+          'Signed push callbacks from a flight-data provider',
+          'A poller that checks more often as departure nears',
+        ],
+      },
+      {
+        heading: 'Core · FastAPI',
+        points: [
+          'Encrypted traffic from the phone',
+          'MongoDB for users, flights and status snapshots',
+          'Redis for cache and locks',
+          'Compares old and new status',
+        ],
+      },
+      {
+        heading: 'Out',
+        points: [
+          'Firebase Cloud Messaging push only on real changes',
+          'Retry job for pushes the phone did not get',
+          'Finished flights stop being tracked',
+        ],
+      },
+    ],
+    howItWorksCaption: 'Provider pushes are fast; the poller fills the gaps. Either way, only real changes reach the phone.',
+    decisions: [
+      { title: 'Push + poll', text: 'Provider callbacks are fast, but some never arrive, so a poller fills the gaps.' },
+      { title: 'Poll smarter, not more', text: 'Check rarely when a flight is days away and often when it is about to leave. This saves provider calls.' },
+      { title: 'Many servers, one job', text: 'Redis locks make sure scheduled jobs run once, even across several machines.' },
+      { title: 'Privacy built in', text: 'Device traffic is encrypted and personal data is masked in logs and support tools.' },
+    ],
     role: 'Built the first version of the service; core contributor',
     built: [
-      { title: 'Service from scratch', text: 'FastAPI app, MongoDB/Redis data model, Docker Compose setup, and the core subscribe, flight-detail and provider-callback APIs.' },
-      { title: 'Instant webhook acks', text: 'Moved callback cache invalidation and push delivery into background tasks so provider webhooks are acknowledged immediately.' },
-      { title: 'Batch state reads', text: 'Added batch flight-state reads with a short-lived Redis cache, replacing one database round trip per flight when loading a user\'s trips.' },
-      { title: 'Distributed lock', text: 'Built SMS-schedule sync guarded by a Redis distributed lock, so only one instance runs it across a multi-worker deployment.' },
-      { title: 'Client contract & CI', text: 'Defined a typed error model and status codes for the mobile client; set up pre-commit, mypy and the CI pipeline.' },
+      { title: 'Service from scratch', text: 'FastAPI app, MongoDB/Redis data model, Docker setup, and the subscribe, flight-detail and provider-callback APIs.' },
+      { title: 'Instant webhook acks', text: 'Moved cache refresh and push delivery into background tasks so provider webhooks are acknowledged immediately.' },
+      { title: 'Batch status reads', text: 'Batch flight-status reads with a short Redis cache instead of one database call per flight.' },
+      { title: 'Distributed lock', text: 'SMS schedule sync guarded by a Redis lock, so only one instance runs it.' },
+      { title: 'Client contract & CI', text: 'Typed error model for the phone client; pre-commit, mypy and the CI pipeline.' },
     ],
-    tech: ['Python 3.12', 'FastAPI', 'Pydantic', 'MongoDB', 'Redis', 'Firebase Cloud Messaging', 'Webhooks (HMAC)', 'Docker', 'pytest', 'CI/CD'],
+    tech: ['Python 3.12', 'FastAPI', 'Pydantic', 'MongoDB', 'Redis', 'Firebase Cloud Messaging', 'Signed webhooks', 'Docker', 'pytest'],
   },
   {
     id: '03',
     slug: 'train-alerts',
     title: 'Train Alerts Cloud',
     shortTitle: 'Train Alerts',
-    meta: 'Python · FastAPI · 2026',
+    meta: 'MakeMyTrip Train Card · Python · FastAPI',
     accent: 'green',
-    description: 'Backend for a live "Train Card" on the phone\'s home screen that follows an Indian Railways booking from chart preparation to arrival.',
-    useCase: 'A user subscribes with their 10-digit PNR. The Train Card then shows chart status, coach and berth, platform, live delay, diversion or cancellation, and taps open the full journey page. Updates arrive as push notifications, and the card hides itself after the trip ends.',
-    howItWorks: 'A FastAPI service combines partner webhooks with tiered polling of live running status. Passengers on the same train share one record per train run, a milestone state machine decides what the card shows, and a push is sent only when something the user can see has actually changed.',
+    label: 'ColorOS AI Mind Suggest · India',
+    tagline: 'From PNR to platform: your train trip, live on the home screen.',
+    description: 'The cloud service behind the MakeMyTrip Train Card on OPPO and OnePlus phones in India.',
+    storyTitle: 'The full trip · Borivali → Kota',
+    howItWorks: [
+      {
+        heading: 'In',
+        points: [
+          'PNR from the Train Card',
+          'Booking and route from MakeMyTrip',
+          'Signed PNR and live-status webhooks from MakeMyTrip',
+          'A poller, only for trips that are close',
+        ],
+      },
+      {
+        heading: 'Core · FastAPI',
+        points: [
+          'Journeys: one per PNR',
+          'Train runs: one per train and date, shared by every booking on it',
+          'Milestone engine decides what the card shows now',
+        ],
+      },
+      {
+        heading: 'Out',
+        points: [
+          'Firebase Cloud Messaging push only if the card visibly changed',
+          'Signed links open the full journey page',
+          'Card hides a day after the trip',
+        ],
+      },
+    ],
+    howItWorksCaption: 'Every traveller on a train shares one live record, and the card only changes when something the user can see changes.',
+    decisions: [
+      { title: 'Share the train, not the work', text: 'One record per train run, linked to every booking on it.' },
+      { title: 'A milestone engine decides the card', text: 'Chart, platform, departed, arrived. Delay is shown on top of the current stage, not instead of it.' },
+      { title: 'Reference-counted subscriptions', text: 'The partner subscription is cancelled only when the last traveller on that train leaves.' },
+      { title: 'Never lose real data', text: 'Observed station times are never overwritten by estimates.' },
+    ],
     role: 'Core contributor',
     built: [
-      { title: 'JWT WebView links', text: 'Replaced a partner API call on every card tap with locally signed JWT WebView links and app deep links (with a Play Store fallback).' },
+      { title: 'Signed WebView links', text: 'Tapping the card opens a locally signed JWT link and app deep link instead of waiting on a partner API call.' },
       { title: 'Cancellation fan-out', text: 'Fully cancelled bookings are unsubscribed automatically and later partner webhooks for them are skipped.' },
-      { title: 'Delay alerts', text: 'A change in delay minutes now sends a push even after departure; refined the card\'s milestone and delay-overlay logic.' },
-      { title: 'Safe live tracking', text: 'Partner error codes fall back safely and keep the last known delay, with added logging and tests.' },
-      { title: 'Subscribe flow & tooling', text: 'Optimised the subscribe flow and passenger data (coach, berth type), built an audit-log tool for support, and made a Train Card demo video in React with Remotion.' },
+      { title: 'Delay alerts after departure', text: 'A change in delay sends a push even after the train leaves; fixed milestone and delay-overlay logic.' },
+      { title: 'Safe live tracking', text: 'Partner errors fall back safely and keep the last known delay.' },
+      { title: 'Subscribe flow & tooling', text: 'Faster subscribe flow, richer passenger data, an audit-log tool for support, and a Train Card demo video in React (Remotion).' },
     ],
-    tech: ['Python 3.12', 'FastAPI', 'MongoDB', 'Redis', 'JWT', 'Webhooks (HMAC)', 'Firebase Cloud Messaging', 'Docker', 'pytest', 'React / Remotion'],
+    tech: ['Python 3.12', 'FastAPI', 'MongoDB', 'Redis', 'JWT', 'Signed webhooks', 'Firebase Cloud Messaging', 'Docker', 'pytest'],
   },
 ]
 
