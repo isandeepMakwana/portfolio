@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react'
-import { ArrowUpRight, Github, Linkedin, Terminal, Moon, Sun, ChevronDown, Mail, Phone, MapPin, Clock, FileText, Code2 } from 'lucide-react'
-import { motion, AnimatePresence, type MotionProps } from 'framer-motion'
-import { Analytics } from '@vercel/analytics/react'
+import { ArrowUp, ArrowUpRight, Github, Linkedin, Terminal, Moon, Sun, ChevronDown, Mail, Phone, MapPin, Clock, FileText, Code2 } from 'lucide-react'
+import { motion, AnimatePresence, MotionConfig, useMotionValueEvent, useScroll, useSpring, type MotionProps } from 'framer-motion'
+import { TypeAnimation } from 'react-type-animation'
+import { PROJECTS, projectHref } from '../data/projects'
+import { ACCENTS } from './projects/accents'
+import ProjectCardPreview from './projects/ProjectCardPreview'
 
 type ColorTheme = 'green' | 'blue' | 'purple' | 'red' | 'orange' | 'pink' | 'cyan' | 'rainbow'
 type TerminalStyle = 'modern' | 'retro' | 'minimal' | 'glass' | 'neon' | 'matrix' | 'cyberpunk' | 'gradient' |
@@ -184,70 +187,18 @@ const COLOR_THEMES: Record<ColorTheme, { primary: string }> = {
   rainbow: { primary: 'linear-gradient(to right, #ff0000, #00ff00, #0000ff)' }
 }
 
-interface Project {
-  id: string
-  title: string
-  meta: string
-  description: string
-  useCase: string
-  howItWorks: string
-  role: string
-  built: string[]
-  tech: string[]
+const REVEAL_UP: MotionProps = {
+  initial: { opacity: 0, y: 20 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, amount: 0.5 },
+  transition: { duration: 0.5, ease: 'easeOut' },
 }
 
-const PROJECTS: Project[] = [
-  {
-    id: '01',
-    title: 'MindPilot — AI Assistant (Ask & Agent modes)',
-    meta: 'Python + Java · LLM / MCP · 2026',
-    description: 'The AI assistant shipped with a new ColorOS release: "Ask" mode answers questions with multiple LLMs, and "Agent" mode completes real tasks by calling partner services as tools.',
-    useCase: 'In Ask mode a user asks a question and gets a streamed answer, or compares answers from several models side by side. In Agent mode the user says something like "order a paneer wrap from a nearby place" and the assistant searches restaurants, builds the cart, shows the bill and places the order only after the user confirms.',
-    howItWorks: 'Ask mode is a Python FastAPI service that routes each query by intent, calls several LLM providers in parallel and streams the result over Server-Sent Events. Agent mode is a Java Spring Boot gateway that talks to partner tools over the Model Context Protocol (MCP), handles partner OAuth sign-in and keeps the list of allowed tools.',
-    role: 'Feature developer on a large multi-team codebase',
-    built: [
-      'Prototyped a food-ordering AI agent over MCP in Python: an LLM planner picks the tool and fills its arguments from each tool\'s JSON schema, with a keyword-scored fallback when the model\'s confidence is low.',
-      'Added human-in-the-loop safety: the agent reviews the cart and itemised bill with the user and refuses to check out without explicit confirmation.',
-      'Implemented partner sign-in with OAuth 2.1 + PKCE and expiring token storage, plus query routing that auto-selects the food connector from the user\'s message.',
-      'Extended the Java Agent gateway with MCP prompts and resources APIs, fixed an OAuth service startup dependency cycle, and wrote live OAuth integration tests.',
-      'Shipped country-level model availability controls: admin API and UI, plus request middleware that hides blocked LLMs per country, backed by unit tests.',
-    ],
-    tech: ['Python', 'FastAPI', 'LLM tool calling', 'MCP', 'OAuth 2.1 / PKCE', 'SSE streaming', 'Java 17', 'Spring Boot', 'MongoDB', 'Redis', 'pytest'],
-  },
-  {
-    id: '02',
-    title: 'Flight Alerts Cloud',
-    meta: 'Python · FastAPI · 2026',
-    description: 'Cloud backend that tracks a traveller\'s flights and pushes real-time status updates to their phone.',
-    useCase: 'A traveller adds a flight from the phone app, a forwarded booking SMS or a booking email. From then on they get a push notification when the flight is delayed, the gate changes, or it is cancelled — without opening an airline app.',
-    howItWorks: 'A FastAPI service stores subscriptions in MongoDB, receives signed status callbacks from a third-party flight-data provider and also polls it on a schedule. Real changes are pushed through Firebase Cloud Messaging; Redis holds caches and locks so the service runs safely on several workers and hosts.',
-    role: 'Built the first version of the service; core contributor',
-    built: [
-      'Started the service from scratch: FastAPI app, MongoDB/Redis data model, Docker Compose setup, and the core subscribe, flight-detail and provider-callback APIs.',
-      'Moved callback cache invalidation and push delivery into background tasks so provider webhooks are acknowledged immediately.',
-      'Added batch flight-state reads with a short-lived Redis cache, replacing one database round trip per flight when loading a user\'s trips.',
-      'Built SMS-schedule sync guarded by a Redis distributed lock, so only one instance runs it across a multi-worker deployment.',
-      'Defined a typed error model and status codes for the mobile client contract; set up pre-commit, mypy and the CI pipeline.',
-    ],
-    tech: ['Python 3.12', 'FastAPI', 'Pydantic', 'MongoDB', 'Redis', 'Firebase Cloud Messaging', 'Webhooks (HMAC)', 'Docker', 'pytest', 'CI/CD'],
-  },
-  {
-    id: '03',
-    title: 'Train Alerts Cloud',
-    meta: 'Python · FastAPI · 2026',
-    description: 'Backend for a live "Train Card" on the phone\'s home screen that follows an Indian Railways booking from chart preparation to arrival.',
-    useCase: 'A user subscribes with their 10-digit PNR. The Train Card then shows chart status, coach and berth, platform, live delay, diversion or cancellation, and taps open the full journey page. Updates arrive as push notifications, and the card hides itself after the trip ends.',
-    howItWorks: 'A FastAPI service combines partner webhooks with tiered polling of live running status. Passengers on the same train share one record per train run, a milestone state machine decides what the card shows, and a push is sent only when something the user can see has actually changed.',
-    role: 'Core contributor',
-    built: [
-      'Replaced a partner API call on every card tap with locally signed JWT WebView links and app deep links (with a Play Store fallback), removing an external dependency from the tap path.',
-      'Implemented cancellation fan-out: fully cancelled bookings are unsubscribed automatically and later partner webhooks for them are skipped.',
-      'Fixed delay alerts so a change in delay minutes sends a push even after departure, and refined the card\'s milestone and delay-overlay logic.',
-      'Hardened live tracking so partner error codes fall back safely and keep the last known delay, with added logging and tests.',
-      'Optimised the subscribe flow and passenger data (coach, berth type), built an audit-log retrieval tool for support, and made an animated product demo of the Train Card in React with Remotion.',
-    ],
-    tech: ['Python 3.12', 'FastAPI', 'MongoDB', 'Redis', 'JWT', 'Webhooks (HMAC)', 'Firebase Cloud Messaging', 'Docker', 'pytest', 'React / Remotion'],
-  },
+const HERO_ROLES = [
+  'AI agents & LLM tool calling', 2000,
+  'Python & FastAPI backends', 2000,
+  'MCP integrations', 2000,
+  'Real-time cloud notifications', 2000,
 ]
 
 interface WindowProps {
@@ -263,7 +214,10 @@ function Window({ title, children, isActive = false, style, colorTheme }: Window
 
   return (
     <motion.div
-      {...currentStyle.animation}
+      initial={currentStyle.animation.initial}
+      whileInView={currentStyle.animation.animate as MotionProps['whileInView']}
+      viewport={{ once: true, amount: 0.1 }}
+      transition={currentStyle.animation.transition}
       className={`${currentStyle.window} overflow-hidden ${isActive ? 'ring-1 ring-green-500/20' : ''}`}
     >
       <div className={`flex items-center justify-between ${currentStyle.header}`}>
@@ -501,11 +455,11 @@ function ThemeControls({ colorTheme, onColorThemeChange, terminalStyle, onTermin
   )
 }
 
-export default function EnhancedPortfolio() {
+export default function EnhancedPortfolio({ initialSection }: { initialSection?: string }) {
   const [activeWindow, setActiveWindow] = useState('home')
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!initialSection)
   const [terminalStyle, setTerminalStyle] = useState<TerminalStyle>('modern')
   const [colorTheme, setColorTheme] = useState<ColorTheme>('green')
   const [isThemeControlsOpen, setIsThemeControlsOpen] = useState(false)
@@ -536,6 +490,16 @@ export default function EnhancedPortfolio() {
     return () => clearTimeout(timer)
   }, [])
 
+  useEffect(() => {
+    if (isLoading || !initialSection) return
+    document.getElementById(initialSection)?.scrollIntoView()
+  }, [isLoading, initialSection])
+
+  const { scrollYProgress } = useScroll()
+  const scrollProgress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 })
+  const [showBackToTop, setShowBackToTop] = useState(false)
+  useMotionValueEvent(scrollYProgress, 'change', (progress) => setShowBackToTop(progress > 0.15))
+
   const toggleDarkMode = () => {
     const nextIsDarkMode = !isDarkMode
     setIsDarkMode(nextIsDarkMode)
@@ -557,6 +521,7 @@ export default function EnhancedPortfolio() {
   }
 
   return (
+    <MotionConfig reducedMotion="user">
     <div 
       className="min-h-screen transition-all duration-500"
       style={{
@@ -588,6 +553,10 @@ export default function EnhancedPortfolio() {
             onToggle={() => setIsThemeControlsOpen(!isThemeControlsOpen)}
           />
           <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 h-0.5 origin-left bg-gradient-to-r from-green-500 via-emerald-400 to-cyan-400"
+              style={{ scaleX: scrollProgress }}
+            />
             <div className="container mx-auto px-6 py-4">
               <Navigation
                 activeWindow={activeWindow}
@@ -603,8 +572,18 @@ export default function EnhancedPortfolio() {
           <main className="container mx-auto px-4 py-20">
             <section id="home" className="min-h-screen flex items-center justify-center py-20 relative">
               {/* Optional: Animated Background Effect */}
-              <div className="absolute inset-0 overflow-hidden">
+              <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-br from-green-500/5 via-transparent to-purple-500/5" />
+                <motion.div
+                  className="absolute top-1/4 left-1/4 w-72 h-72 rounded-full bg-green-500/10 blur-3xl"
+                  animate={{ x: [0, 60, -20, 0], y: [0, -40, 30, 0] }}
+                  transition={{ duration: 18, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <motion.div
+                  className="absolute bottom-1/4 right-1/4 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl"
+                  animate={{ x: [0, -50, 30, 0], y: [0, 40, -30, 0] }}
+                  transition={{ duration: 22, repeat: Infinity, ease: 'easeInOut' }}
+                />
               </div>
 
               <motion.div
@@ -631,14 +610,29 @@ export default function EnhancedPortfolio() {
                   <span className="relative">
                     Sandeep Makwana
                     <motion.span
-                      className="absolute -bottom-2 left-0 w-full h-1 bg-green-500/20"
-                      initial={{ width: 0 }}
-                      animate={{ width: '100%' }}
-                      transition={{ delay: 0.5, duration: 0.8 }}
+                      className="absolute -bottom-2 left-0 w-full h-1 rounded-full bg-gradient-to-r from-green-500 via-emerald-400 to-cyan-400 origin-left"
+                      initial={{ scaleX: 0 }}
+                      animate={{ scaleX: 1 }}
+                      transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
                     />
                   </span>
                 </h1>
-                <br />
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                  className="mb-6 h-8 font-mono text-lg md:text-2xl"
+                >
+                  <span className="text-zinc-500">&gt; building </span>
+                  <TypeAnimation
+                    sequence={HERO_ROLES}
+                    wrapper="span"
+                    speed={50}
+                    repeat={Infinity}
+                    className="text-green-500"
+                  />
+                </motion.div>
                 
                 {/* Brief Introduction */}
                 <motion.p 
@@ -730,7 +724,7 @@ export default function EnhancedPortfolio() {
             </section>
 
             <section id="about" className="py-20">
-              <h2 className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>About Me</h2>
+              <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>About Me</motion.h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <Window style={terminalStyle} colorTheme={colorTheme} title="about-me.txt" isActive>
                   <div className="font-mono space-y-4 text-zinc-300">
@@ -873,70 +867,58 @@ export default function EnhancedPortfolio() {
             </section>
 
             <section id="projects" className="py-20">
-              <h2 className={`text-3xl font-bold mb-3 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Projects</h2>
+              <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold mb-3 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Projects</motion.h2>
               <p className={`max-w-3xl mx-auto mb-8 text-center ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>
-                An AI assistant and two event-driven cloud services for a smartphone OS — the problem each one solves, how it works, and what I built.
+                An AI assistant and two event-driven cloud services for a smartphone OS. Open a project to see its story.
               </p>
               <Window style={terminalStyle} colorTheme={colorTheme} title="projects.json" isActive>
-                <div className="space-y-10">
-                  {PROJECTS.map((project) => (
-                    <motion.div
-                      key={project.id}
-                      className="group"
-                      whileHover={{ scale: 1.02 }}
-                      transition={{ type: 'spring', stiffness: 300 }}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-4">
-                          <span className="text-zinc-600 font-mono">{project.id}</span>
-                          <h3 className={`text-2xl font-bold group-hover:text-green-500 transition-colors ${isDarkMode ? 'text-white' : 'text-black'}`}>
-                            {project.title}
-                          </h3>
+                <div className="grid md:grid-cols-3 gap-5">
+                  {PROJECTS.map((project, i) => {
+                    const accent = ACCENTS[project.accent]
+                    return (
+                      <motion.a
+                        key={project.id}
+                        href={projectHref(project.slug)}
+                        aria-label={`Read the story of ${project.shortTitle}`}
+                        className={`group relative flex flex-col rounded-xl border ${accent.border} ${accent.hoverCard} p-5 overflow-hidden shadow-lg shadow-transparent transition-[border-color,box-shadow] duration-300 cursor-pointer
+                          ${isDarkMode ? 'bg-zinc-900/60' : 'bg-white'}`}
+                        initial={{ opacity: 0, y: 30 }}
+                        whileInView={{ opacity: 1, y: 0, transition: { type: 'spring', stiffness: 220, damping: 24, delay: i * 0.05 } }}
+                        viewport={{ once: true, amount: 0.2 }}
+                        whileHover={{ y: -4 }}
+                        transition={{ type: 'spring', stiffness: 220, damping: 24 }}
+                      >
+                        <span className={`absolute inset-x-0 top-0 h-0.5 ${accent.bgSolid}`} />
+                        <span className={`font-mono text-sm ${accent.text}`}>{project.id}</span>
+                        <h3 className={`mt-2 text-xl font-bold font-mono ${isDarkMode ? 'text-white' : 'text-black'}`}>{project.shortTitle}</h3>
+                        <p className="mt-1 font-mono text-xs text-zinc-500">{project.meta}</p>
+                        <p className={`mt-3 text-sm leading-6 ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>{project.description}</p>
+                        <div className="mt-4">
+                          <ProjectCardPreview slug={project.slug} />
                         </div>
-                        <span className="text-zinc-500 text-sm font-mono text-right">{project.meta}</span>
-                      </div>
-                      <p className={`mb-4 ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>{project.description}</p>
-                      <div className="grid md:grid-cols-2 gap-4 mb-4">
-                        <div className="rounded-lg border border-green-500/10 bg-green-500/5 p-4">
-                          <h4 className="text-green-500 text-sm font-semibold uppercase tracking-wider mb-2">Use case</h4>
-                          <p className={`text-sm leading-6 ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>{project.useCase}</p>
-                        </div>
-                        <div className="rounded-lg border border-blue-500/10 bg-blue-500/5 p-4">
-                          <h4 className="text-blue-400 text-sm font-semibold uppercase tracking-wider mb-2">How it works</h4>
-                          <p className={`text-sm leading-6 ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>{project.howItWorks}</p>
-                        </div>
-                      </div>
-                      <div className="mb-4">
-                        <h4 className="text-yellow-500 text-sm font-semibold uppercase tracking-wider mb-2">
-                          What I built <span className="text-zinc-500 normal-case tracking-normal font-normal">· {project.role}</span>
-                        </h4>
-                        <ul className="space-y-2">
-                          {project.built.map((item) => (
-                            <li key={item} className={`flex gap-2 text-sm leading-6 ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>
-                              <span className="text-green-500">→</span>
-                              <span>{item}</span>
-                            </li>
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {project.tech.slice(0, 4).map((tech) => (
+                            <span key={tech} className={`rounded-md border ${accent.border} px-2 py-0.5 font-mono text-[11px] ${accent.text}`}>
+                              {tech}
+                            </span>
                           ))}
-                        </ul>
-                      </div>
-                      <div className="flex gap-2 flex-wrap">
-                        {project.tech.map((tech) => (
-                          <span key={tech} className="px-2 py-1 rounded-full bg-zinc-800/50 text-xs text-zinc-400">
-                            {tech}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.div>
-                  ))}
+                        </div>
+                        <span className={`mt-auto pt-5 inline-flex items-center gap-2 font-mono text-sm ${accent.text}`}>
+                          Read the story
+                          <ArrowUpRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1 group-hover:-translate-y-0.5" />
+                        </span>
+                      </motion.a>
+                    )
+                  })}
                 </div>
               </Window>
             </section>
 
             <section id="career" className="py-20">
               <div className="flex items-center justify-between mb-8">
-                <h2 className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>
                   Career Journey
-                </h2>
+                </motion.h2>
                 <motion.a
                   href="https://drive.google.com/file/d/1wzmmR0z68oF1bbAdFbrzcoAl6c1ZVeTh/view?usp=sharing"
                   target="_blank"
@@ -955,11 +937,17 @@ export default function EnhancedPortfolio() {
                   {/* OPPO & OnePlus */}
                   <motion.div
                     className="relative pl-8 border-l-2 border-pink-500/20"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
+                    initial={{ opacity: 0, x: -24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    whileHover={{ x: 6 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 24 }}
                   >
                     <div className="absolute -left-[9px] top-0">
-                      <div className="w-4 h-4 rounded-full bg-pink-500" />
+                      <div className="relative w-4 h-4">
+                        <div className="absolute inset-0 rounded-full bg-pink-500 animate-ping opacity-60" />
+                        <div className="relative w-4 h-4 rounded-full bg-pink-500" />
+                      </div>
                     </div>
                     <div className="space-y-4">
                       <div className="flex justify-between items-center">
@@ -1004,8 +992,11 @@ export default function EnhancedPortfolio() {
                   {/* ConsultAdd Full-time Role */}
                   <motion.div
                     className="relative pl-8 border-l-2 border-green-500/20"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
+                    initial={{ opacity: 0, x: -24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    whileHover={{ x: 6 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 24 }}
                   >
                     <div className="absolute -left-[9px] top-0">
                       <div className="w-4 h-4 rounded-full bg-green-500" />
@@ -1057,8 +1048,11 @@ export default function EnhancedPortfolio() {
                   {/* ConsultAdd Internship */}
                   <motion.div
                     className="relative pl-8 border-l-2 border-blue-500/20"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
+                    initial={{ opacity: 0, x: -24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    whileHover={{ x: 6 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 24 }}
                   >
                     <div className="absolute -left-[9px] top-0">
                       <div className="w-4 h-4 rounded-full bg-blue-500" />
@@ -1102,8 +1096,11 @@ export default function EnhancedPortfolio() {
                   {/* Education */}
                   <motion.div
                     className="relative pl-8 border-l-2 border-purple-500/20"
-                    whileHover={{ scale: 1.02 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
+                    initial={{ opacity: 0, x: -24 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true, amount: 0.2 }}
+                    whileHover={{ x: 6 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 24 }}
                   >
                     <div className="absolute -left-[9px] top-0">
                       <div className="w-4 h-4 rounded-full bg-purple-500" />
@@ -1139,7 +1136,7 @@ export default function EnhancedPortfolio() {
             </section>
 
             <section id="contact" className="py-20">
-              <h2 className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Contact</h2>
+              <motion.h2 {...REVEAL_UP} className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Contact</motion.h2>
               <div className="grid md:grid-cols-2 gap-6">
                 <Window style={terminalStyle} colorTheme={colorTheme} title="contact-form.jsx" isActive>
                   <form className="space-y-4">
@@ -1265,9 +1262,26 @@ export default function EnhancedPortfolio() {
               <p className="text-zinc-400">Copyright &copy; 2026 Sandeep Makwana. All rights reserved.</p>
             </div>
           </footer>
-          <Analytics />
+          <AnimatePresence>
+            {showBackToTop && (
+              <motion.button
+                key="back-to-top"
+                initial={{ opacity: 0, scale: 0.6, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.6, y: 20 }}
+                whileHover={{ y: -3 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="fixed bottom-6 right-6 z-50 w-11 h-11 rounded-full bg-green-500 text-black flex items-center justify-center shadow-lg shadow-green-500/30 hover:bg-green-400 transition-colors"
+                aria-label="Back to top"
+              >
+                <ArrowUp className="w-5 h-5" />
+              </motion.button>
+            )}
+          </AnimatePresence>
         </>
       )}
     </div>
+    </MotionConfig>
   )
 }
