@@ -595,18 +595,47 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
   const scrollProgress = useSpring(scrollYProgress, { stiffness: 120, damping: 30, restDelta: 0.001 })
   const [showBackToTop, setShowBackToTop] = useState(false)
   useMotionValueEvent(scrollYProgress, 'change', (progress) => setShowBackToTop(progress > 0.15))
+  const [contactStatus, setContactStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
   const tone = TONES[isDarkMode ? 'dark' : 'light']
 
-  const handleContactSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleContactSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    const form = new FormData(event.currentTarget)
+    if (contactStatus === 'sending') return
+    const formEl = event.currentTarget
+    const form = new FormData(formEl)
+    // Bots fill this hidden field. A filled value means we drop the submission.
+    if (String(form.get('_honey') ?? '').trim()) return
     const name = String(form.get('name') ?? '').trim()
     const email = String(form.get('email') ?? '').trim()
     const message = String(form.get('message') ?? '').trim()
-    const subject = `Portfolio message from ${name}`
-    const body = `${message}\n\n— ${name} (${email})`
-    window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    setContactStatus('sending')
+    try {
+      const response = await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(CONTACT_EMAIL)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          name,
+          email,
+          message,
+          _subject: `Portfolio message from ${name}`,
+          _template: 'table',
+          _captcha: 'false',
+        }),
+      })
+      const data = (await response.json()) as { success?: string; message?: string }
+      // The first submission only asks the owner to confirm the form. Later ones are delivered.
+      if (data.message?.toLowerCase().includes('activat')) {
+        formEl.reset()
+        setContactStatus('sent')
+        return
+      }
+      if (!response.ok || data.success === 'false') throw new Error('send failed')
+      formEl.reset()
+      setContactStatus('sent')
+    } catch {
+      setContactStatus('error')
+    }
   }
 
   const toggleDarkMode = () => {
@@ -1159,7 +1188,15 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
               />
               <div className="grid md:grid-cols-2 gap-6">
                 <Window style={terminalStyle} colorTheme={colorTheme} title="contact-form.jsx" isActive>
-                  <form className="space-y-4" onSubmit={handleContactSubmit}>
+                  <form className="relative space-y-4" onSubmit={handleContactSubmit}>
+                    <input
+                      type="text"
+                      name="_honey"
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      className="absolute -left-[9999px] h-0 w-0 opacity-0"
+                    />
                     <div>
                       <label htmlFor="name" className={`block text-sm font-medium mb-1 ${tone.muted}`}>Name</label>
                       <input
@@ -1195,14 +1232,23 @@ export default function EnhancedPortfolio({ initialSection }: { initialSection?:
                     </div>
                     <motion.button
                       type="submit"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="w-full bg-green-500 text-black font-bold py-3 px-4 rounded-md hover:bg-green-400 transition-colors flex items-center justify-center gap-2"
+                      disabled={contactStatus === 'sending'}
+                      whileHover={{ scale: contactStatus === 'sending' ? 1 : 1.02 }}
+                      whileTap={{ scale: contactStatus === 'sending' ? 1 : 0.98 }}
+                      className="w-full min-h-[44px] bg-green-500 text-black font-bold py-3 px-4 rounded-md hover:bg-green-400 transition-colors flex items-center justify-center gap-2 disabled:cursor-wait disabled:opacity-70"
                     >
                       <Mail className="w-4 h-4" />
-                      Send Message
+                      {contactStatus === 'sending' ? 'Sending…' : 'Send Message'}
                     </motion.button>
-                    <p className={`text-xs text-center ${tone.muted}`}>Opens your email app with the message ready to send.</p>
+                    {contactStatus === 'sent' && (
+                      <p className="text-sm text-center text-green-500" role="status">Message sent. I'll reply to the email you entered.</p>
+                    )}
+                    {contactStatus === 'error' && (
+                      <p className="text-sm text-center text-red-400" role="alert">
+                        Couldn't send just now. Email me directly at {CONTACT_EMAIL}.
+                      </p>
+                    )}
+                    <p className={`text-xs text-center ${tone.muted}`}>Your message is emailed straight to me.</p>
                   </form>
                   {/* Quick Response Promise */}
                   <div className={`pt-4 border-t mt-4 ${tone.divider}`}>
