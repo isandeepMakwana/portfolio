@@ -184,6 +184,72 @@ const COLOR_THEMES: Record<ColorTheme, { primary: string }> = {
   rainbow: { primary: 'linear-gradient(to right, #ff0000, #00ff00, #0000ff)' }
 }
 
+interface Project {
+  id: string
+  title: string
+  meta: string
+  description: string
+  useCase: string
+  howItWorks: string
+  role: string
+  built: string[]
+  tech: string[]
+}
+
+const PROJECTS: Project[] = [
+  {
+    id: '01',
+    title: 'MindPilot — AI Assistant (Ask & Agent modes)',
+    meta: 'Python + Java · LLM / MCP · 2026',
+    description: 'The AI assistant shipped with a new ColorOS release: "Ask" mode answers questions with multiple LLMs, and "Agent" mode completes real tasks by calling partner services as tools.',
+    useCase: 'In Ask mode a user asks a question and gets a streamed answer, or compares answers from several models side by side. In Agent mode the user says something like "order a paneer wrap from a nearby place" and the assistant searches restaurants, builds the cart, shows the bill and places the order only after the user confirms.',
+    howItWorks: 'Ask mode is a Python FastAPI service that routes each query by intent, calls several LLM providers in parallel and streams the result over Server-Sent Events. Agent mode is a Java Spring Boot gateway that talks to partner tools over the Model Context Protocol (MCP), handles partner OAuth sign-in and keeps the list of allowed tools.',
+    role: 'Feature developer on a large multi-team codebase',
+    built: [
+      'Prototyped a food-ordering AI agent over MCP in Python: an LLM planner picks the tool and fills its arguments from each tool\'s JSON schema, with a keyword-scored fallback when the model\'s confidence is low.',
+      'Added human-in-the-loop safety: the agent reviews the cart and itemised bill with the user and refuses to check out without explicit confirmation.',
+      'Implemented partner sign-in with OAuth 2.1 + PKCE and expiring token storage, plus query routing that auto-selects the food connector from the user\'s message.',
+      'Extended the Java Agent gateway with MCP prompts and resources APIs, fixed an OAuth service startup dependency cycle, and wrote live OAuth integration tests.',
+      'Shipped country-level model availability controls: admin API and UI, plus request middleware that hides blocked LLMs per country, backed by unit tests.',
+    ],
+    tech: ['Python', 'FastAPI', 'LLM tool calling', 'MCP', 'OAuth 2.1 / PKCE', 'SSE streaming', 'Java 17', 'Spring Boot', 'MongoDB', 'Redis', 'pytest'],
+  },
+  {
+    id: '02',
+    title: 'Flight Alerts Cloud',
+    meta: 'Python · FastAPI · 2026',
+    description: 'Cloud backend that tracks a traveller\'s flights and pushes real-time status updates to their phone.',
+    useCase: 'A traveller adds a flight from the phone app, a forwarded booking SMS or a booking email. From then on they get a push notification when the flight is delayed, the gate changes, or it is cancelled — without opening an airline app.',
+    howItWorks: 'A FastAPI service stores subscriptions in MongoDB, receives signed status callbacks from a third-party flight-data provider and also polls it on a schedule. Real changes are pushed through Firebase Cloud Messaging; Redis holds caches and locks so the service runs safely on several workers and hosts.',
+    role: 'Built the first version of the service; core contributor',
+    built: [
+      'Started the service from scratch: FastAPI app, MongoDB/Redis data model, Docker Compose setup, and the core subscribe, flight-detail and provider-callback APIs.',
+      'Moved callback cache invalidation and push delivery into background tasks so provider webhooks are acknowledged immediately.',
+      'Added batch flight-state reads with a short-lived Redis cache, replacing one database round trip per flight when loading a user\'s trips.',
+      'Built SMS-schedule sync guarded by a Redis distributed lock, so only one instance runs it across a multi-worker deployment.',
+      'Defined a typed error model and status codes for the mobile client contract; set up pre-commit, mypy and the CI pipeline.',
+    ],
+    tech: ['Python 3.12', 'FastAPI', 'Pydantic', 'MongoDB', 'Redis', 'Firebase Cloud Messaging', 'Webhooks (HMAC)', 'Docker', 'pytest', 'CI/CD'],
+  },
+  {
+    id: '03',
+    title: 'Train Alerts Cloud',
+    meta: 'Python · FastAPI · 2026',
+    description: 'Backend for a live "Train Card" on the phone\'s home screen that follows an Indian Railways booking from chart preparation to arrival.',
+    useCase: 'A user subscribes with their 10-digit PNR. The Train Card then shows chart status, coach and berth, platform, live delay, diversion or cancellation, and taps open the full journey page. Updates arrive as push notifications, and the card hides itself after the trip ends.',
+    howItWorks: 'A FastAPI service combines partner webhooks with tiered polling of live running status. Passengers on the same train share one record per train run, a milestone state machine decides what the card shows, and a push is sent only when something the user can see has actually changed.',
+    role: 'Core contributor',
+    built: [
+      'Replaced a partner API call on every card tap with locally signed JWT WebView links and app deep links (with a Play Store fallback), removing an external dependency from the tap path.',
+      'Implemented cancellation fan-out: fully cancelled bookings are unsubscribed automatically and later partner webhooks for them are skipped.',
+      'Fixed delay alerts so a change in delay minutes sends a push even after departure, and refined the card\'s milestone and delay-overlay logic.',
+      'Hardened live tracking so partner error codes fall back safely and keep the last known delay, with added logging and tests.',
+      'Optimised the subscribe flow and passenger data (coach, berth type), built an audit-log retrieval tool for support, and made an animated product demo of the Train Card in React with Remotion.',
+    ],
+    tech: ['Python 3.12', 'FastAPI', 'MongoDB', 'Redis', 'JWT', 'Webhooks (HMAC)', 'Firebase Cloud Messaging', 'Docker', 'pytest', 'React / Remotion'],
+  },
+]
+
 interface WindowProps {
   title: string
   children: React.ReactNode
@@ -581,9 +647,9 @@ export default function EnhancedPortfolio() {
                   transition={{ delay: 0.4 }}
                   className={`text-xl max-w-2xl mx-auto mb-8 ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}
                 >
-                  I'm a Software Engineer specializing in{' '}
-                  <span className="text-green-500 font-semibold">full-stack development</span> and{' '}
-                  <span className="text-green-500 font-semibold">cloud architecture</span>,
+                  I'm a Software Engineer III at OPPO & OnePlus, building{' '}
+                  <span className="text-green-500 font-semibold">AI agents & LLM features</span> and{' '}
+                  <span className="text-green-500 font-semibold">Python backend services</span>,
                   passionate about building elegant solutions to complex problems.
                 </motion.p>
                 {/* CTA Buttons */}
@@ -673,21 +739,21 @@ export default function EnhancedPortfolio() {
                         <span className="text-zinc-600 select-none">01</span>
                         <span>
                           Hi! I'm <span className="text-green-500 font-semibold">Sandeep Makwana</span>, 
-                          a <span className="text-blue-400 font-semibold">Software Engineer II</span> at ConsultAdd.
+                          a <span className="text-blue-400 font-semibold">Software Engineer III</span> at OPPO & OnePlus.
                         </span>
                       </div>
                       <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
                         <span className="text-zinc-600 select-none">02</span>
                         <span>
-                          With <span className="text-yellow-500">2+ years</span> of experience in building
+                          With <span className="text-yellow-500">4+ years</span> of experience in building
                           <span className="text-purple-400"> scalable applications</span>
                         </span>
                       </div>
                       <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
                         <span className="text-zinc-600 select-none">03</span>
                         <span>
-                          Specializing in <span className="text-pink-400">full-stack development</span> and
-                          <span className="text-orange-400"> cloud architecture</span>
+                          Specializing in <span className="text-pink-400">AI agents & LLMs</span> and
+                          <span className="text-orange-400"> Python backend systems</span>
                         </span>
                       </div>
                       <div className="flex gap-4 items-center hover:bg-zinc-800/50 p-2 rounded transition-colors">
@@ -734,7 +800,7 @@ export default function EnhancedPortfolio() {
                           Frameworks & Libraries
                         </h3>
                         <div className="flex flex-wrap gap-3">
-                          {['Django', 'Flask', 'FastAPI', 'React', 'Tailwind', 'Pytest', 'Pandas', 'NumPy'].map(skill => (
+                          {['FastAPI', 'Django', 'Flask', 'Spring Boot', 'Pydantic', 'React', 'Tailwind', 'Pytest', 'Pandas'].map(skill => (
                             <motion.span
                               key={skill}
                               whileHover={{ scale: 1.05 }}
@@ -752,7 +818,25 @@ export default function EnhancedPortfolio() {
                           Cloud & DevOps
                         </h3>
                         <div className="flex flex-wrap gap-3">
-                          {['AWS', 'Docker', 'Jenkins', 'Git', 'CI/CD'].map(skill => (
+                          {['AWS', 'Docker', 'MongoDB', 'Redis', 'Firebase (FCM)', 'Jenkins', 'Git', 'CI/CD'].map(skill => (
+                            <motion.span
+                              key={skill}
+                              whileHover={{ scale: 1.05 }}
+                              className="px-3 py-1.5 bg-zinc-800/70 rounded-lg text-sm text-zinc-300 hover:bg-zinc-700/70 transition-colors cursor-default"
+                            >
+                              {skill}
+                            </motion.span>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h3 className="text-pink-400 mb-4 font-semibold flex items-center gap-2">
+                          <span className="w-2 h-2 bg-pink-400 rounded-full"></span>
+                          AI & LLM
+                        </h3>
+                        <div className="flex flex-wrap gap-3">
+                          {['LLM Tool Calling', 'AI Agents', 'Model Context Protocol (MCP)', 'Prompt Engineering', 'Multi-LLM Routing', 'SSE Streaming', 'OAuth 2.1 / PKCE'].map(skill => (
                             <motion.span
                               key={skill}
                               whileHover={{ scale: 1.05 }}
@@ -789,32 +873,13 @@ export default function EnhancedPortfolio() {
             </section>
 
             <section id="projects" className="py-20">
-              <h2 className={`text-3xl font-bold mb-8 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Projects</h2>
+              <h2 className={`text-3xl font-bold mb-3 text-center ${isDarkMode ? 'text-white' : 'text-black'}`}>Projects</h2>
+              <p className={`max-w-3xl mx-auto mb-8 text-center ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>
+                An AI assistant and two event-driven cloud services for a smartphone OS — the problem each one solves, how it works, and what I built.
+              </p>
               <Window style={terminalStyle} colorTheme={colorTheme} title="projects.json" isActive>
-                <div className="space-y-8">
-                  {[
-                    {
-                      id: '01',
-                      title: 'E-commerce Platform',
-                      year: '2024',
-                      tech: ['React', 'TypeScript', 'Tailwind CSS', 'Stripe'],
-                      description: 'A fully responsive e-commerce platform with secure payments and real-time inventory management.'
-                    },
-                    {
-                      id: '02',
-                      title: 'AI-Powered Analytics Dashboard',
-                      year: '2023',
-                      tech: ['React', 'Python', 'TensorFlow', 'D3.js'],
-                      description: 'An advanced analytics dashboard leveraging AI for predictive insights and data visualization.'
-                    },
-                    {
-                      id: '03',
-                      title: 'Blockchain Voting System',
-                      year: '2023',
-                      tech: ['Solidity', 'Ethereum', 'Web3.js', 'React'],
-                      description: 'A secure and transparent voting system built on blockchain technology for organizational decision-making.'
-                    }
-                  ].map((project) => (
+                <div className="space-y-10">
+                  {PROJECTS.map((project) => (
                     <motion.div
                       key={project.id}
                       className="group"
@@ -828,9 +893,32 @@ export default function EnhancedPortfolio() {
                             {project.title}
                           </h3>
                         </div>
-                        <span className="text-zinc-600">{project.year}</span>
+                        <span className="text-zinc-500 text-sm font-mono text-right">{project.meta}</span>
                       </div>
                       <p className={`mb-4 ${isDarkMode ? 'text-zinc-400' : 'text-gray-600'}`}>{project.description}</p>
+                      <div className="grid md:grid-cols-2 gap-4 mb-4">
+                        <div className="rounded-lg border border-green-500/10 bg-green-500/5 p-4">
+                          <h4 className="text-green-500 text-sm font-semibold uppercase tracking-wider mb-2">Use case</h4>
+                          <p className={`text-sm leading-6 ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>{project.useCase}</p>
+                        </div>
+                        <div className="rounded-lg border border-blue-500/10 bg-blue-500/5 p-4">
+                          <h4 className="text-blue-400 text-sm font-semibold uppercase tracking-wider mb-2">How it works</h4>
+                          <p className={`text-sm leading-6 ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>{project.howItWorks}</p>
+                        </div>
+                      </div>
+                      <div className="mb-4">
+                        <h4 className="text-yellow-500 text-sm font-semibold uppercase tracking-wider mb-2">
+                          What I built <span className="text-zinc-500 normal-case tracking-normal font-normal">· {project.role}</span>
+                        </h4>
+                        <ul className="space-y-2">
+                          {project.built.map((item) => (
+                            <li key={item} className={`flex gap-2 text-sm leading-6 ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>
+                              <span className="text-green-500">→</span>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                       <div className="flex gap-2 flex-wrap">
                         {project.tech.map((tech) => (
                           <span key={tech} className="px-2 py-1 rounded-full bg-zinc-800/50 text-xs text-zinc-400">
@@ -864,6 +952,55 @@ export default function EnhancedPortfolio() {
               </div>
               <Window style={terminalStyle} colorTheme={colorTheme} title="career.json" isActive={activeWindow === 'career'}>
                 <div className="space-y-12">
+                  {/* OPPO & OnePlus */}
+                  <motion.div
+                    className="relative pl-8 border-l-2 border-pink-500/20"
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ type: 'spring', stiffness: 300 }}
+                  >
+                    <div className="absolute -left-[9px] top-0">
+                      <div className="w-4 h-4 rounded-full bg-pink-500" />
+                    </div>
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
+                          Software Engineer III
+                        </h3>
+                        <span className="text-pink-500 font-mono text-sm">Mar 2026 - Present</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`font-semibold ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>OPPO & OnePlus</span>
+                        <span className="text-zinc-500">•</span>
+                        <span className="text-zinc-500">Hyderabad</span>
+                      </div>
+                      <ul className="space-y-3 text-zinc-400">
+                        <li className="flex gap-2">
+                          <span className="text-pink-500">→</span>
+                          <span>Prototyped an LLM-powered food-ordering agent over the Model Context Protocol (MCP) for the MindPilot AI assistant, with schema-driven tool calls and a human-in-the-loop checkout gate</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="text-pink-500">→</span>
+                          <span>Shipped country-level LLM availability controls (admin API, UI and middleware) for MindPilot's multi-model Ask mode</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="text-pink-500">→</span>
+                          <span>Built the first version of a FastAPI flight-alert cloud service that pushes real-time flight status to phones via Firebase Cloud Messaging</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="text-pink-500">→</span>
+                          <span>Core contributor to a live train-tracking service: JWT WebView links, cancellation fan-out and delay-alert fixes</span>
+                        </li>
+                      </ul>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {['Python', 'FastAPI', 'LLM / MCP', 'Java', 'Spring Boot', 'MongoDB', 'Redis', 'FCM', 'Docker'].map((tech) => (
+                          <span key={tech} className="px-2 py-1 bg-zinc-800/50 rounded-full text-xs text-zinc-400">
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
+
                   {/* ConsultAdd Full-time Role */}
                   <motion.div
                     className="relative pl-8 border-l-2 border-green-500/20"
@@ -878,7 +1015,7 @@ export default function EnhancedPortfolio() {
                         <h3 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-black'}`}>
                           Software Engineer II
                         </h3>
-                        <span className="text-green-500 font-mono text-sm">Jul 2022 - Present</span>
+                        <span className="text-green-500 font-mono text-sm">Jul 2022 - Mar 2026</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <span className={`font-semibold ${isDarkMode ? 'text-zinc-300' : 'text-gray-700'}`}>ConsultAdd</span>
@@ -1125,7 +1262,7 @@ export default function EnhancedPortfolio() {
 
           <footer className="bg-black/80 backdrop-blur-sm py-8">
             <div className="container mx-auto px-6 text-center">
-              <p className="text-zinc-400">Copyright &copy; 2024 Sandeep Makwana. All rights reserved.</p>
+              <p className="text-zinc-400">Copyright &copy; 2026 Sandeep Makwana. All rights reserved.</p>
             </div>
           </footer>
           <Analytics />
